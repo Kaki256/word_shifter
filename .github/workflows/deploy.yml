@@ -1,9 +1,8 @@
-
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch: {}
 
 # Ensure the runner token has write permission to push the gh-pages branch
