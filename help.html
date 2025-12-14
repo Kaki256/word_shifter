@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>使い方 — Word Shifter</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .readme { max-width: 900px; margin: 24px auto; padding: 20px; background: #fff; border-radius:8px; }
+    .readme h1{ font-size:20px }
+    pre{ background:#f6f7fb; padding:12px; border-radius:6px; overflow:auto }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <div style="display:flex;align-items:center;gap:12px;justify-content:space-between">
+      <h1 style="margin:0">使い方 — Word Shifter</h1>
+      <div>
+        <a href="index.html" class="button" style="text-decoration:none;padding:8px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#111">戻る</a>
+      </div>
+    </div>
+
+    <section class="panel readme" id="readme">読み込み中…</section>
+  </main>
+
+<script>
+// 簡易 Markdown -> HTML (ヘッダー、リスト、コードブロック、段落のみ)
+function mdToHtml(md){
+  const lines = md.replace(/\r/g,'').split('\n');
+  let html = '';
+  let inCode = false;
+  let codeBuf = [];
+  let inList = false;
+  lines.forEach((ln, idx) => {
+    if(ln.startsWith('```')){ inCode = !inCode; if(!inCode){ html += '<pre><code>'+escapeHtml(codeBuf.join('\n'))+'</code></pre>'; codeBuf=[]; } return; }
+    if(inCode){ codeBuf.push(ln); return; }
+    if(/^#{1,6}\s/.test(ln)){
+      const m = ln.match(/^(#{1,6})\s+(.*)$/); const level = m[1].length; if(inList){ html += '</ul>'; inList=false; }
+      html += `<h${level}>${escapeHtml(m[2])}</h${level}>`; return;
+    }
+    if(/^\s*[-*+]\s+/.test(ln)){
+      if(!inList){ html += '<ul>'; inList = true; }
+      const item = ln.replace(/^\s*[-*+]\s+/, ''); html += '<li>'+escapeHtml(item)+'</li>'; return;
+    }
+    if(ln.trim()===''){ if(inList){ html += '</ul>'; inList=false; } html += '<p></p>'; return; }
+    html += '<p>'+escapeHtml(ln)+'</p>';
+  });
+  if(inList) html += '</ul>';
+  return html;
+}
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadReadme(){
+  try{
+    const r = await fetch('README.md');
+    if(!r.ok) throw new Error('README.md not found');
+    const txt = await r.text();
+    document.getElementById('readme').innerHTML = mdToHtml(txt);
+  }catch(e){ document.getElementById('readme').textContent = '読み込みに失敗しました: '+e.message; }
+}
+loadReadme();
+</script>
+</body>
+</html>
