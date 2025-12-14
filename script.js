@@ -11,7 +11,8 @@ async function fetchIfExists(url){
     const r = await fetch(url);
     if(!r.ok) return null;
     return await r.text();
-  }catch(e){
+  }catch(err){
+    console.debug('fetchIfExists error', err);
     return null;
   }
 }
@@ -76,20 +77,39 @@ async function init(){
       select.appendChild(opt);
     }
   }
-  // alt.csv を読み込めれば表示
-  const altText = await fetchIfExists('alt.csv');
-  if(altText!==null) el('altTextarea').value = altText;
+  // alt.csv はまず localStorage を参照し、なければリポジトリ上の alt.csv を取得
+  const storageKey = 'ws_alt';
+  const localAlt = localStorage.getItem(storageKey);
+  if(localAlt !== null){
+    el('altTextarea').value = localAlt;
+  } else {
+    const altText = await fetchIfExists('alt.csv');
+    if(altText!==null) el('altTextarea').value = altText;
+  }
 
-  showStatus('辞書とaltが読み込まれました。編集して「変換可能な単語ペアを探す」を押してください。');
+  // textarea の変更は localStorage に保存
+  const saveAlt = () => { localStorage.setItem(storageKey, el('altTextarea').value); };
+  el('altTextarea').addEventListener('input', saveAlt);
+
+  showStatus('辞書とaltが読み込まれました。編集は自動で保存されます。');
 }
 
 el('loadAltBtn').addEventListener('click', async ()=>{
-  const txt = await fetchIfExists('alt.csv'); if(txt===null) showStatus('alt.csv が見つかりませんでした。'); else { el('altTextarea').value = txt; showStatus('alt.csv を読み込みました。'); }
+  const txt = await fetchIfExists('alt.csv');
+  if(txt===null) {
+    showStatus('alt.csv が見つかりませんでした。');
+  } else {
+    el('altTextarea').value = txt;
+    try{ localStorage.setItem('ws_alt', txt); }catch(err){ console.warn('localStorage set failed', err); }
+    showStatus('alt.csv を読み込み、保存しました。');
+  }
 });
 
 el('resetAltBtn').addEventListener('click', ()=>{
-  el('altTextarea').value = 'A,Ａ\na,ａ\nｦ,ヲ';
-  showStatus('サンプルにリセットしました。');
+  const sample = 'A,Ａ\na,ａ\nｦ,ヲ';
+  el('altTextarea').value = sample;
+  try{ localStorage.setItem('ws_alt', sample); }catch(err){ console.warn('localStorage set failed', err); }
+  showStatus('サンプルにリセットしました（保存済み）。');
 });
 
 el('loadDictBtn').addEventListener('click', async ()=>{
