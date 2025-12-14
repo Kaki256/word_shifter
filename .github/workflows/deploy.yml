@@ -1,9 +1,15 @@
+
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch: {}
+
+# Ensure the runner token has write permission to push the gh-pages branch
+permissions:
+  contents: write
+  pages: write
 
 jobs:
   deploy:
@@ -12,7 +18,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v3
